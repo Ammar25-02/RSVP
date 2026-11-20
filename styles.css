@@ -1,11 +1,14 @@
+/* Colours taken from the orchid artwork: orchid pink/magenta + leaf green */
 :root {
-  --bg: #faf6f0;
+  --bg: #fdf7fa;
   --card: #ffffff;
-  --ink: #2f2a26;
-  --muted: #7a6f66;
-  --accent: #a8805a;
-  --accent-dark: #8a6643;
-  --line: #e8ddd0;
+  --ink: #3a2a33;
+  --muted: #86707c;
+  --accent: #b04a83;
+  --accent-dark: #8e3567;
+  --accent-soft: rgba(176, 74, 131, .18);
+  --leaf: #6e8b47;
+  --line: #f0dbe6;
   --ok: #4f7a55;
   --err: #a24a3f;
   --radius: 14px;
@@ -37,28 +40,6 @@ body {
   text-align: center;
   padding: 0 0 8px;
 }
-.frame {
-  position: relative;
-  width: 100%;
-  max-width: 440px;
-  aspect-ratio: 432 / 578;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 6% 20% 12%;
-  isolation: isolate;
-}
-.frame::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: url("assets/floral-frame.png") center / 100% 100% no-repeat;
-  mix-blend-mode: multiply; /* blends the image's white into the page colour */
-}
-.frame .names { font-size: clamp(40px, 12vw, 60px); }
 .hero-date {
   font-family: var(--serif);
   font-size: 18px;
@@ -189,7 +170,7 @@ body {
   border-radius: var(--radius);
   padding: 28px 22px;
   margin-top: 32px;
-  box-shadow: 0 10px 30px -20px rgba(80, 55, 30, .35);
+  box-shadow: 0 10px 30px -20px rgba(142, 53, 103, .3);
 }
 .card h2 {
   font-family: var(--serif);
@@ -232,7 +213,7 @@ textarea {
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(168, 128, 90, .18);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 textarea { min-height: 96px; resize: vertical; }
 
@@ -257,7 +238,7 @@ textarea { min-height: 96px; resize: vertical; }
   background: var(--accent);
   color: #fff;
 }
-.choice input:focus-visible + label { box-shadow: 0 0 0 3px rgba(168, 128, 90, .3); }
+.choice input:focus-visible + label { box-shadow: 0 0 0 3px var(--accent-soft); }
 
 .btn {
   display: inline-block;
@@ -282,7 +263,7 @@ textarea { min-height: 96px; resize: vertical; }
   color: var(--accent-dark);
   border: 1px solid var(--accent);
 }
-.btn.ghost:hover { background: rgba(168, 128, 90, .08); }
+.btn.ghost:hover { background: rgba(176, 74, 131, .08); }
 
 .link-btn {
   display: inline-block;
@@ -324,4 +305,118 @@ footer {
 
 @media (min-width: 600px) {
   .card { padding: 36px 40px; }
+}
+
+/* ============================================================
+   Floral theme (invitation page only: <body class="themed">)
+   ============================================================ */
+.floral-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg) url("assets/floral-frame.png") center / cover no-repeat;
+}
+/* Wide screens: show the whole frame instead of a blown-up crop */
+@media (min-aspect-ratio: 432/578) {
+  .floral-bg { background-size: auto 100%; }
+}
+
+.themed .wrap { padding-top: 0; }
+
+/* Cover screen: names sit inside the floral frame */
+.themed .hero {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  position: relative;
+}
+.themed .eyebrow { color: var(--leaf); font-weight: 600; }
+.themed .names {
+  font-size: clamp(46px, 13vw, 72px);
+  text-shadow: 0 0 18px #fff, 0 0 6px #fff;
+}
+.themed .hero-date { text-shadow: 0 0 10px #fff; }
+
+.scroll-hint {
+  position: absolute;
+  bottom: max(22px, 4vh);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--accent-dark);
+  text-decoration: none;
+  background: rgba(255, 255, 255, .75);
+  padding: 6px 12px 4px;
+  border-radius: 999px;
+  animation: bob 2s ease-in-out infinite;
+}
+@keyframes bob { 50% { transform: translate(-50%, 5px); } }
+
+/* Frosted panels so text stays readable over the flowers */
+.panel,
+.themed .card {
+  background: rgba(255, 255, 255, .8);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, .95);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 34px -20px rgba(142, 53, 103, .45);
+  padding: 28px 22px;
+  margin-top: 20px;
+}
+.panel.details { gap: 18px; }
+.themed .countdown { margin: 8px 0 0; }
+.themed .countdown div { background: rgba(255, 255, 255, .9); }
+
+.themed footer {
+  width: fit-content;
+  margin: 28px auto 0;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .8);
+}
+
+/* 1 Pax / 2 Pax buttons */
+.choice.pax label b { display: block; font-size: 17px; font-weight: 600; }
+.choice.pax label small { display: block; font-size: 11px; opacity: .8; margin-top: 2px; }
+
+/* ---------- Butterflies ---------- */
+.butterflies {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bfly {
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  width: 46px;
+  height: 46px;
+  will-change: transform;
+  filter: drop-shadow(0 3px 3px rgba(80, 30, 60, .18));
+}
+.bfly .wings {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: flap .28s ease-in-out infinite alternate;
+}
+@keyframes flap {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .butterflies { display: none; }
+  .scroll-hint { animation: none; }
 }

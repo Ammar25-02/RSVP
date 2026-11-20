@@ -5,30 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wedding Invitation &amp; RSVP</title>
   <meta name="description" content="You're invited — please RSVP.">
+  <meta name="theme-color" content="#fdf7fa">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="config.js"></script>
 </head>
-<body>
+<body class="themed">
+  <!-- Floral background (fixed) and butterflies -->
+  <div class="floral-bg" aria-hidden="true"></div>
+  <div class="butterflies" id="butterflies" aria-hidden="true"></div>
+
   <main class="wrap">
     <section class="hero">
-      <div class="frame">
-        <p class="eyebrow" id="eyebrow">The wedding of</p>
-        <h1 class="names">
-          <span id="p1">Partner One</span>
-          <span class="amp">&amp;</span>
-          <span id="p2">Partner Two</span>
-        </h1>
-        <p class="hero-date" id="heroDate"></p>
-      </div>
+      <p class="eyebrow" id="eyebrow">The wedding of</p>
+      <h1 class="names">
+        <span id="p1">Partner One</span>
+        <span class="amp">&amp;</span>
+        <span id="p2">Partner Two</span>
+      </h1>
+      <p class="hero-date" id="heroDate"></p>
       <p class="greeting" id="greeting"></p>
+      <a class="scroll-hint" href="#invite" aria-label="Scroll to invitation">
+        <span>Scroll</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </a>
     </section>
 
-    <hr class="divider">
-
-    <section class="formal hidden" id="formal">
+    <section class="panel formal hidden" id="invite">
       <p class="hosts" id="hosts"></p>
       <p class="invite-line" id="inviteLineMs"></p>
       <p class="invite-line en" id="inviteLineEn"></p>
@@ -37,9 +42,7 @@
       <p class="full-name" id="fullName2"></p>
     </section>
 
-    <hr class="divider" id="formalDivider">
-
-    <section class="details">
+    <section class="panel details">
       <div>
         <div class="detail-label">When</div>
         <div class="detail-value" id="dateText"></div>
@@ -58,14 +61,14 @@
         <div class="detail-label">Dress code</div>
         <div class="detail-value" id="dressCode"></div>
       </div>
-    </section>
 
-    <div class="countdown" id="countdown" aria-label="Countdown to the wedding">
-      <div><b id="cd-d">0</b><span>Days</span></div>
-      <div><b id="cd-h">0</b><span>Hours</span></div>
-      <div><b id="cd-m">0</b><span>Mins</span></div>
-      <div><b id="cd-s">0</b><span>Secs</span></div>
-    </div>
+      <div class="countdown" id="countdown" aria-label="Countdown to the wedding">
+        <div><b id="cd-d">0</b><span>Days</span></div>
+        <div><b id="cd-h">0</b><span>Hours</span></div>
+        <div><b id="cd-m">0</b><span>Mins</span></div>
+        <div><b id="cd-s">0</b><span>Secs</span></div>
+      </div>
+    </section>
 
     <!-- RSVP form -->
     <section class="card" id="rsvpCard">
@@ -98,8 +101,17 @@
         </div>
 
         <div class="field hidden" id="guestsField">
-          <label for="guests">Number of guests <span class="optional">(including you)</span></label>
-          <select id="guests" name="guests"></select>
+          <span class="label">How many pax?</span>
+          <div class="choice pax" role="radiogroup">
+            <div>
+              <input type="radio" id="pax-1" name="guests" value="1">
+              <label for="pax-1"><b>1 Pax</b><small>Saya seorang · Just me</small></label>
+            </div>
+            <div>
+              <input type="radio" id="pax-2" name="guests" value="2">
+              <label for="pax-2"><b>2 Pax</b><small>Bersama pasangan · With spouse</small></label>
+            </div>
+          </div>
         </div>
 
         <div class="field">
@@ -133,7 +145,6 @@
   <script>
   (function () {
     var W = window.WEDDING || {};
-    var maxSeats = W.defaultMaxSeats || 2;
     var storageKey = "rsvp:general";
 
     function $(id) { return document.getElementById(id); }
@@ -166,9 +177,7 @@
       setText("inviteLineEn", W.inviteLineEn);
       setText("fullName1", W.fullName1);
       setText("fullName2", W.fullName2);
-      $("formal").classList.remove("hidden");
-    } else {
-      $("formalDivider").classList.add("hidden");
+      $("invite").classList.remove("hidden");
     }
 
     if (W.rsvpDeadline) {
@@ -178,16 +187,6 @@
 
     var demo = !W.scriptUrl;
     if (demo) $("demoNotice").classList.remove("hidden");
-
-    // Guests dropdown
-    for (var i = 1; i <= maxSeats; i++) {
-      var o = document.createElement("option");
-      o.value = i;
-      o.textContent = maxSeats === 2
-        ? (i === 1 ? "1 — Saya seorang / Just me" : "2 — Bersama pasangan / With spouse")
-        : i + (i === 1 ? " person" : " people");
-      $("guests").appendChild(o);
-    }
 
     // ---------- Countdown ----------
     var target = new Date(W.dateISO).getTime();
@@ -203,6 +202,9 @@
 
     // ---------- Form behaviour ----------
     var form = $("rsvpForm");
+    function checked(name) {
+      return (form.querySelector('input[name="' + name + '"]:checked') || {}).value || "";
+    }
     form.addEventListener("change", function (e) {
       if (e.target.name === "attending") {
         $("guestsField").classList.toggle("hidden", e.target.value !== "Yes");
@@ -214,8 +216,7 @@
       $("thanksCard").classList.remove("hidden");
       if (data.attending === "Yes") {
         setText("thanksTitle", "See you there!");
-        setText("thanksText", "Thank you, " + data.name + ". We've saved " + data.guests +
-          (data.guests == 1 ? " seat" : " seats") + " for you.");
+        setText("thanksText", "Thank you, " + data.name + ". We've noted " + data.guests + " pax for you.");
       } else {
         setText("thanksTitle", "Thank you for letting us know");
         setText("thanksText", "We'll miss you, " + data.name + ". Thank you for your kind reply.");
@@ -231,12 +232,13 @@
     try {
       var saved = JSON.parse(localStorage.getItem(storageKey) || "null");
       if (saved) {
-        $("name").value = saved.name || $("name").value;
+        $("name").value = saved.name || "";
         $("phone").value = saved.phone || "";
         $("message").value = saved.message || "";
         var r = document.querySelector('input[name="attending"][value="' + saved.attending + '"]');
         if (r) { r.checked = true; $("guestsField").classList.toggle("hidden", saved.attending !== "Yes"); }
-        if (saved.guests) $("guests").value = saved.guests;
+        var g = document.querySelector('input[name="guests"][value="' + saved.guests + '"]');
+        if (g) g.checked = true;
         showThanks(saved);
       }
     } catch (e) { /* storage unavailable */ }
@@ -245,11 +247,12 @@
       e.preventDefault();
       setText("formError", "");
 
-      var attending = (form.querySelector('input[name="attending"]:checked') || {}).value;
+      var attending = checked("attending");
+      var pax = checked("guests");
       var data = {
         name: $("name").value.trim(),
-        attending: attending || "",
-        guests: attending === "Yes" ? $("guests").value : "0",
+        attending: attending,
+        guests: attending === "Yes" ? pax : "0",
         phone: $("phone").value.trim(),
         message: $("message").value.trim(),
         invite: "",
@@ -258,6 +261,7 @@
 
       if (!data.name) { setText("formError", "Please enter your name."); $("name").focus(); return; }
       if (!data.attending) { setText("formError", "Please let us know if you can attend."); return; }
+      if (attending === "Yes" && !pax) { setText("formError", "Please choose 1 or 2 pax."); return; }
 
       var btn = $("submitBtn");
       btn.disabled = true; btn.textContent = "Sending…";
@@ -281,6 +285,82 @@
         setText("formError", "Couldn't send your reply. Please check your connection and try again.");
       });
     });
+  })();
+
+  // ---------- Butterflies ----------
+  (function () {
+    var box = document.getElementById("butterflies");
+    if (!box || !window.requestAnimationFrame) return;
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    // [upper wing, lower wing, edge] colours taken from the orchid artwork
+    var palettes = [
+      ["#c2558f", "#e9a3c5", "#7d2a57"],
+      ["#f3bfd5", "#fbe1ec", "#b0607f"],
+      ["#d8a7df", "#efd3f2", "#8a5a93"],
+      ["#e8cf7c", "#f5e6b3", "#9a7d33"],
+      ["#9cbf72", "#cfe2b6", "#5d7d3a"]
+    ];
+
+    function svg(p) {
+      return '<svg viewBox="-20 -20 40 40" width="100%" height="100%">' +
+        '<g class="wings">' +
+          '<path d="M0,-2 C-4,-15 -19,-19 -17,-6 C-16,0 -7,1 0,-1Z" fill="' + p[0] + '" stroke="' + p[2] + '" stroke-width=".8"/>' +
+          '<path d="M0,0 C-8,1 -14,8 -11,13 C-8,17 -2,10 0,2Z" fill="' + p[1] + '" stroke="' + p[2] + '" stroke-width=".8"/>' +
+          '<g transform="scale(-1,1)">' +
+            '<path d="M0,-2 C-4,-15 -19,-19 -17,-6 C-16,0 -7,1 0,-1Z" fill="' + p[0] + '" stroke="' + p[2] + '" stroke-width=".8"/>' +
+            '<path d="M0,0 C-8,1 -14,8 -11,13 C-8,17 -2,10 0,2Z" fill="' + p[1] + '" stroke="' + p[2] + '" stroke-width=".8"/>' +
+          '</g>' +
+        '</g>' +
+        '<ellipse cx="0" cy="0" rx="1.3" ry="8" fill="#4a3340"/>' +
+        '<path d="M0,-7 Q-2,-13 -5,-15 M0,-7 Q2,-13 5,-15" stroke="#4a3340" stroke-width=".7" fill="none"/>' +
+        '</svg>';
+    }
+
+    var W = window.innerWidth, H = window.innerHeight;
+    window.addEventListener("resize", function () { W = window.innerWidth; H = window.innerHeight; });
+
+    var count = W < 600 ? 4 : 6;
+    var flies = [];
+    for (var i = 0; i < count; i++) {
+      var el = document.createElement("div");
+      el.className = "bfly";
+      el.innerHTML = svg(palettes[i % palettes.length]);
+      el.style.animationDelay = (Math.random() * -2).toFixed(2) + "s";
+      el.firstChild.firstChild.style.animationDuration = (0.22 + Math.random() * 0.12).toFixed(2) + "s";
+      box.appendChild(el);
+      flies.push({
+        el: el,
+        x: Math.random() * W,
+        y: Math.random() * H,
+        a: Math.random() * Math.PI * 2,
+        v: 0.5 + Math.random() * 0.6,
+        t: Math.random() * 1000,
+        p: Math.random() * 10,
+        s: 0.7 + Math.random() * 0.5
+      });
+    }
+
+    var last = performance.now();
+    function frame(now) {
+      var dt = Math.min(50, now - last) / 16.67;
+      last = now;
+      for (var i = 0; i < flies.length; i++) {
+        var b = flies[i];
+        b.t += dt;
+        // gentle wandering turn
+        b.a += (Math.sin(b.t * 0.015 + b.p) * 0.025 + (Math.random() - 0.5) * 0.04) * dt;
+        b.x += Math.cos(b.a) * b.v * dt;
+        b.y += (Math.sin(b.a) * b.v + Math.sin(b.t * 0.12) * 0.35) * dt;
+        // wrap around the screen edges
+        if (b.x < -50) b.x = W + 40; else if (b.x > W + 50) b.x = -40;
+        if (b.y < -50) b.y = H + 40; else if (b.y > H + 50) b.y = -40;
+        var deg = b.a * 180 / Math.PI + 90;
+        b.el.style.transform = "translate3d(" + b.x.toFixed(1) + "px," + b.y.toFixed(1) + "px,0) rotate(" + deg.toFixed(1) + "deg) scale(" + b.s + ")";
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   })();
   </script>
 </body>
