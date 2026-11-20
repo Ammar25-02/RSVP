@@ -11,13 +11,13 @@ window.WEDDING = {
 
   // Hosts (parents) and the couple's full names for the formal invitation block
   hosts: "Abdul Rahman bin Mohamad & Kasmiah@Yatie binti Kamaludin",
-  inviteLineMs: "Dengan segala hormatnya, kami menjemput Tuan/Puan serta pasangan ke Majlis Resepsi Perkahwinan",
-  inviteLineEn: "cordially invite you and your spouse to the Wedding Reception of",
+  inviteLineMs: "Dengan segala hormatnya, kami menjemput Tuan/Puan serta pasangan sahaja ke Majlis Resepsi Perkahwinan",
+  inviteLineEn: "cordially invite Mr./Mrs./Ms. and spouse only to the Wedding Reception of",
   fullName1: "Muhammad Ammar bin Pauzan",
   fullName2: "Nur Atiqah Syafiqah binti Abdul Rahman",
 
-  // Short line under the names
-  greeting: "Together with our families, we joyfully invite you to celebrate our wedding.",
+  // Optional short line under the floral frame (leave "" to hide)
+  greeting: "",
 
   // Event date/time in ISO format WITH your timezone offset (used for the countdown)
   dateISO: "2027-01-10T11:00:00+08:00",
@@ -35,8 +35,7 @@ window.WEDDING = {
   // Last day guests can reply (shown on the page, YYYY-MM-DD)
   rsvpDeadline: "2026-12-20",
 
-  // Max number of people per reply when the QR/link does not specify ?seats=
-  // (invitation is for guest + spouse)
+  // Max number of people per reply (invitation is for guest + spouse only)
   defaultMaxSeats: 2,
 
   // Paste your Google Apps Script Web App URL here (see README.md).

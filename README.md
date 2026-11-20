@@ -12,10 +12,11 @@ google-apps-script/Code.gs Backend that saves replies to Google Sheets
 
 ## How it works
 
-1. Each guest gets a QR code that links to the invitation, for example
-   `https://you.github.io/wedding-rsvp/?to=Siti%20Nur&seats=2`
-2. When they scan it, they see "Dear Siti Nur," with their name already filled in. They can pick at most 2 guests.
+1. All guests get the same QR code, which links to the invitation.
+2. They scan it, read the invitation, and fill in the RSVP form. Each reply covers at most 2 people: the guest, plus their spouse.
 3. They submit the form. A new row appears in your Google Sheet.
+
+The floral frame around the names is `assets/floral-frame.png`. To change the design, replace that file.
 
 ---
 
@@ -58,19 +59,12 @@ Until `scriptUrl` is set, the site runs in **demo mode**: replies are saved only
 3. In the repository, go to **Settings → Pages**. Under **Build and deployment**, set **Source: Deploy from a branch**, **Branch: `main`**, **Folder: `/ (root)`**, and click **Save**.
 4. After about a minute, your site is live at `https://YOUR-USERNAME.github.io/wedding-rsvp/`.
 
-## Step 4: Make the QR codes
+## Step 4: Make the QR code
 
 1. Open `https://YOUR-USERNAME.github.io/wedding-rsvp/qr.html`. The invitation URL is filled in for you.
-2. Paste your guest list with one guest per line, in the form `Name, seats`:
-   ```
-   Uncle Rahman & Family, 4
-   Siti Nur, 2
-   ```
-   Leave the list empty if you want **one general QR code** for a poster or for all printed cards.
-3. Choose what you need:
-   - **Print / Save as PDF**: prints cards in a 3-column grid, ready to cut out.
-   - **Download PNG**: saves one QR code image, for example to put on your own invitation design.
-   - **Download links (CSV)**: saves the personal links, so you can send them on WhatsApp instead.
+2. Choose what you need:
+   - **Download PNG**: saves the QR code image, to put on your printed invitation card.
+   - **Print / Save as PDF**: prints copies in a 3-column grid, 9 per A4 page, ready to cut out.
 
 ## Tips
 

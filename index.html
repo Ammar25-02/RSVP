@@ -14,18 +14,19 @@
 <body>
   <main class="wrap">
     <section class="hero">
-      <p class="eyebrow" id="eyebrow">The wedding of</p>
-      <h1 class="names">
-        <span id="p1">Partner One</span>
-        <span class="amp">&amp;</span>
-        <span id="p2">Partner Two</span>
-      </h1>
+      <div class="frame">
+        <p class="eyebrow" id="eyebrow">The wedding of</p>
+        <h1 class="names">
+          <span id="p1">Partner One</span>
+          <span class="amp">&amp;</span>
+          <span id="p2">Partner Two</span>
+        </h1>
+        <p class="hero-date" id="heroDate"></p>
+      </div>
       <p class="greeting" id="greeting"></p>
     </section>
 
     <hr class="divider">
-
-    <p class="dear hidden" id="dear" style="text-align:center;margin-bottom:20px"></p>
 
     <section class="formal hidden" id="formal">
       <p class="hosts" id="hosts"></p>
@@ -132,11 +133,8 @@
   <script>
   (function () {
     var W = window.WEDDING || {};
-    var params = new URLSearchParams(location.search);
-    var inviteName = (params.get("to") || "").trim().slice(0, 100);
-    var seatsParam = parseInt(params.get("seats"), 10);
-    var maxSeats = seatsParam > 0 ? Math.min(seatsParam, 20) : (W.defaultMaxSeats || 4);
-    var storageKey = "rsvp:" + (inviteName || "general");
+    var maxSeats = W.defaultMaxSeats || 2;
+    var storageKey = "rsvp:general";
 
     function $(id) { return document.getElementById(id); }
     function setText(id, v) { $(id).textContent = v || ""; }
@@ -145,6 +143,12 @@
     setText("p1", W.partner1);
     setText("p2", W.partner2);
     setText("greeting", W.greeting);
+    if (!W.greeting) $("greeting").classList.add("hidden");
+    var hd = new Date(W.dateISO);
+    if (!isNaN(hd)) {
+      var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+      setText("heroDate", pad(hd.getDate()) + " · " + pad(hd.getMonth() + 1) + " · " + hd.getFullYear());
+    }
     setText("dateText", W.dateText);
     setText("timeText", W.timeText);
     setText("venue", W.venue);
@@ -172,19 +176,16 @@
       setText("deadlineText", "Kindly reply by " + dl.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }));
     }
 
-    if (inviteName) {
-      $("dear").textContent = "Dear " + inviteName + ",";
-      $("dear").classList.remove("hidden");
-      $("name").value = inviteName;
-    }
-
     var demo = !W.scriptUrl;
     if (demo) $("demoNotice").classList.remove("hidden");
 
     // Guests dropdown
     for (var i = 1; i <= maxSeats; i++) {
       var o = document.createElement("option");
-      o.value = i; o.textContent = i + (i === 1 ? " person" : " people");
+      o.value = i;
+      o.textContent = maxSeats === 2
+        ? (i === 1 ? "1 — Saya seorang / Just me" : "2 — Bersama pasangan / With spouse")
+        : i + (i === 1 ? " person" : " people");
       $("guests").appendChild(o);
     }
 
@@ -251,7 +252,7 @@
         guests: attending === "Yes" ? $("guests").value : "0",
         phone: $("phone").value.trim(),
         message: $("message").value.trim(),
-        invite: inviteName,
+        invite: "",
         userAgent: navigator.userAgent.slice(0, 150)
       };
 

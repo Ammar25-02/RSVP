@@ -43,7 +43,8 @@
       font: inherit; font-size: 12px; color: var(--accent-dark); background: none;
       border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; text-decoration: none;
     }
-    .count { text-align: center; color: var(--muted); font-size: 14px; margin-top: 24px; }
+    .count { text-align: center; color: var(--muted); font-size: 14px; margin-top: 24px; word-break: break-all; }
+    @media screen { .qr-card.copy { display: none; } .grid { grid-template-columns: minmax(220px, 280px); justify-content: center; } }
 
     @media print {
       body { background: #fff; }
@@ -60,7 +61,7 @@
       <section class="hero" style="padding-bottom:0">
         <p class="eyebrow">Host tools</p>
         <h1 class="names" style="font-size:44px">QR Codes</h1>
-        <p class="greeting">Generate a QR code for each guest. Scanning it opens the invitation with their name and seat limit already filled in.</p>
+        <p class="greeting">One QR code for all guests. Print it on your cards or download the image to put on your invitation design.</p>
       </section>
 
       <section class="card">
@@ -71,20 +72,18 @@
         </div>
 
         <div class="field">
-          <label for="guestList">Guest list <span class="optional">(one per line: Name, seats)</span></label>
-          <textarea id="guestList" spellcheck="false">Uncle Rahman &amp; Family, 4
-Siti Nur, 2
-Mr. &amp; Mrs. Tan, 2
-John Lee, 1</textarea>
-          <p class="hint">Leave empty to make one general QR code for everyone (e.g. for a poster or a printed card).</p>
+          <label for="copies">Copies to print</label>
+          <select id="copies">
+            <option value="1">1</option>
+            <option value="6">6</option>
+            <option value="9" selected>9 (one A4 page)</option>
+            <option value="18">18</option>
+          </select>
         </div>
 
         <div class="row">
-          <button class="btn" type="button" id="genBtn">Generate QR codes</button>
+          <button class="btn" type="button" id="genBtn">Generate QR code</button>
           <button class="btn ghost" type="button" id="printBtn">Print / Save as PDF</button>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <button class="btn ghost" type="button" id="csvBtn">Download links (CSV)</button>
         </div>
       </section>
     </div>
@@ -102,44 +101,19 @@ John Lee, 1</textarea>
     var here = location.href.split("#")[0].split("?")[0].replace(/qr\.html$/, "");
     $("baseUrl").value = location.protocol.indexOf("http") === 0 ? here : "";
 
-    var lastRows = [];
-
-    function parseGuests(text) {
-      return text.split(/\r?\n/).map(function (line) {
-        line = line.trim();
-        if (!line) return null;
-        var m = line.match(/^(.*?)(?:\s*[,;\t]\s*(\d+))?$/);
-        return { name: m[1].trim(), seats: m[2] ? parseInt(m[2], 10) : null };
-      }).filter(Boolean);
-    }
-
-    function buildUrl(base, g) {
-      if (!g) return base;
-      var p = new URLSearchParams();
-      p.set("to", g.name);
-      if (g.seats) p.set("seats", g.seats);
-      return base + (base.indexOf("?") === -1 ? "?" : "&") + p.toString();
-    }
-
-    function slug(s) {
-      return (s || "general").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "guest";
-    }
+    var generated = false;
 
     function generate() {
-      var base = $("baseUrl").value.trim();
-      if (!base) { alert("Please enter your invitation URL first."); $("baseUrl").focus(); return; }
-      if (!/^https?:\/\//i.test(base)) base = "https://" + base;
+      var url = $("baseUrl").value.trim();
+      if (!url) { alert("Please enter your invitation URL first."); $("baseUrl").focus(); return; }
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
 
-      var guests = parseGuests($("guestList").value);
-      var list = guests.length ? guests : [null];
+      var copies = parseInt($("copies").value, 10) || 1;
       var grid = $("grid");
       grid.innerHTML = "";
-      lastRows = [];
+      generated = true;
 
-      list.forEach(function (g) {
-        var url = buildUrl(base, g);
-        lastRows.push({ name: g ? g.name : "(general)", seats: g && g.seats ? g.seats : "", url: url });
-
+      for (var n = 0; n < copies; n++) (function (first) {
         var card = document.createElement("div");
         card.className = "qr-card";
 
@@ -148,19 +122,13 @@ John Lee, 1</textarea>
         couple.textContent = (W.partner1 || "") + " & " + (W.partner2 || "");
         var guest = document.createElement("p");
         guest.className = "guest";
-        guest.textContent = g ? g.name : "You're invited";
+        guest.textContent = W.dateText || "You're invited";
         var box = document.createElement("div");
         box.className = "qr-box";
         card.appendChild(couple);
         card.appendChild(guest);
         card.appendChild(box);
 
-        if (g && g.seats) {
-          var seats = document.createElement("p");
-          seats.className = "seats";
-          seats.textContent = g.seats + (g.seats === 1 ? " seat" : " seats") + " reserved";
-          card.appendChild(seats);
-        }
         var scan = document.createElement("p");
         scan.className = "scan";
         scan.textContent = "Scan to RSVP";
@@ -168,47 +136,38 @@ John Lee, 1</textarea>
 
         new QRCode(box, { text: url, width: 336, height: 336, correctLevel: QRCode.CorrectLevel.M });
 
-        var actions = document.createElement("div");
-        actions.className = "qr-actions no-print";
-        var dl = document.createElement("button");
-        dl.type = "button";
-        dl.textContent = "Download PNG";
-        dl.addEventListener("click", function () {
-          var canvas = box.querySelector("canvas");
-          var a = document.createElement("a");
-          a.href = canvas.toDataURL("image/png");
-          a.download = "rsvp-qr-" + slug(g && g.name) + ".png";
-          a.click();
-        });
-        var open = document.createElement("a");
-        open.href = url; open.target = "_blank"; open.rel = "noopener";
-        open.textContent = "Open link";
-        actions.appendChild(dl);
-        actions.appendChild(open);
-        card.appendChild(actions);
+        if (first) {
+          var actions = document.createElement("div");
+          actions.className = "qr-actions no-print";
+          var dl = document.createElement("button");
+          dl.type = "button";
+          dl.textContent = "Download PNG";
+          dl.addEventListener("click", function () {
+            var canvas = box.querySelector("canvas");
+            var a = document.createElement("a");
+            a.href = canvas.toDataURL("image/png");
+            a.download = "rsvp-qr.png";
+            a.click();
+          });
+          var open = document.createElement("a");
+          open.href = url; open.target = "_blank"; open.rel = "noopener";
+          open.textContent = "Open link";
+          actions.appendChild(dl);
+          actions.appendChild(open);
+          card.appendChild(actions);
+        } else {
+          card.classList.add("copy");
+        }
 
         grid.appendChild(card);
-      });
+      })(n === 0);
 
-      $("count").textContent = list.length + (list.length === 1 ? " QR code" : " QR codes") + " generated";
-    }
-
-    function downloadCsv() {
-      if (!lastRows.length) generate();
-      if (!lastRows.length) return;
-      var esc = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
-      var csv = "Name,Seats,Link\n" + lastRows.map(function (r) {
-        return [esc(r.name), esc(r.seats), esc(r.url)].join(",");
-      }).join("\n");
-      var a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
-      a.download = "rsvp-links.csv";
-      a.click();
+      $("count").textContent = "Link: " + url;
     }
 
     $("genBtn").addEventListener("click", generate);
-    $("printBtn").addEventListener("click", function () { if (!lastRows.length) generate(); window.print(); });
-    $("csvBtn").addEventListener("click", downloadCsv);
+    $("copies").addEventListener("change", function () { if (generated) generate(); });
+    $("printBtn").addEventListener("click", function () { if (!generated) generate(); window.print(); });
 
     if ($("baseUrl").value) generate();
   })();
