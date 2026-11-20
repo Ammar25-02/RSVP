@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>RSVP QR Codes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    .wrap { max-width: 980px; }
+    .tools { max-width: 620px; margin: 0 auto; }
+    .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+    textarea { min-height: 160px; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row .btn { flex: 1 1 160px; width: auto; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 32px;
+    }
+    .qr-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      text-align: center;
+      break-inside: avoid;
+    }
+    .qr-card .couple { font-family: var(--serif); font-size: 20px; margin: 0; }
+    .qr-card .guest { font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--accent-dark); margin: 2px 0 12px; min-height: 1.2em; }
+    .qr-box { display: inline-block; padding: 8px; background: #fff; }
+    .qr-box img, .qr-box canvas { display: block; width: 168px; height: 168px; }
+    .qr-card .seats { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+    .qr-card .scan { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 10px 0 0; }
+    .qr-actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+    .qr-actions a, .qr-actions button {
+      font: inherit; font-size: 12px; color: var(--accent-dark); background: none;
+      border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; text-decoration: none;
+    }
+    .count { text-align: center; color: var(--muted); font-size: 14px; margin-top: 24px; }
+
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none !important; }
+      .wrap { padding: 0; max-width: none; }
+      .grid { grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; }
+      .qr-card { border: 1px dashed #bbb; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="tools no-print">
+      <section class="hero" style="padding-bottom:0">
+        <p class="eyebrow">Host tools</p>
+        <h1 class="names" style="font-size:44px">QR Codes</h1>
+        <p class="greeting">Generate a QR code for each guest. Scanning it opens the invitation with their name and seat limit already filled in.</p>
+      </section>
+
+      <section class="card">
+        <div class="field">
+          <label for="baseUrl">Invitation URL</label>
+          <input type="url" id="baseUrl" placeholder="https://yourname.github.io/wedding-rsvp/">
+          <p class="hint">Your GitHub Pages address. Filled in automatically once this page is live.</p>
+        </div>
+
+        <div class="field">
+          <label for="guestList">Guest list <span class="optional">(one per line: Name, seats)</span></label>
+          <textarea id="guestList" spellcheck="false">Uncle Rahman &amp; Family, 4
+Siti Nur, 2
+Mr. &amp; Mrs. Tan, 2
+John Lee, 1</textarea>
+          <p class="hint">Leave empty to make one general QR code for everyone (e.g. for a poster or a printed card).</p>
+        </div>
+
+        <div class="row">
+          <button class="btn" type="button" id="genBtn">Generate QR codes</button>
+          <button class="btn ghost" type="button" id="printBtn">Print / Save as PDF</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ghost" type="button" id="csvBtn">Download links (CSV)</button>
+        </div>
+      </section>
+    </div>
+
+    <p class="count no-print" id="count"></p>
+    <section class="grid" id="grid"></section>
+  </main>
+
+  <script>
+  (function () {
+    var W = window.WEDDING || {};
+    function $(id) { return document.getElementById(id); }
+
+    // Default base URL = the folder this page is served from
+    var here = location.href.split("#")[0].split("?")[0].replace(/qr\.html$/, "");
+    $("baseUrl").value = location.protocol.indexOf("http") === 0 ? here : "";
+
+    var lastRows = [];
+
+    function parseGuests(text) {
+      return text.split(/\r?\n/).map(function (line) {
+        line = line.trim();
+        if (!line) return null;
+        var m = line.match(/^(.*?)(?:\s*[,;\t]\s*(\d+))?$/);
+        return { name: m[1].trim(), seats: m[2] ? parseInt(m[2], 10) : null };
+      }).filter(Boolean);
+    }
+
+    function buildUrl(base, g) {
+      if (!g) return base;
+      var p = new URLSearchParams();
+      p.set("to", g.name);
+      if (g.seats) p.set("seats", g.seats);
+      return base + (base.indexOf("?") === -1 ? "?" : "&") + p.toString();
+    }
+
+    function slug(s) {
+      return (s || "general").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "guest";
+    }
+
+    function generate() {
+      var base = $("baseUrl").value.trim();
+      if (!base) { alert("Please enter your invitation URL first."); $("baseUrl").focus(); return; }
+      if (!/^https?:\/\//i.test(base)) base = "https://" + base;
+
+      var guests = parseGuests($("guestList").value);
+      var list = guests.length ? guests : [null];
+      var grid = $("grid");
+      grid.innerHTML = "";
+      lastRows = [];
+
+      list.forEach(function (g) {
+        var url = buildUrl(base, g);
+        lastRows.push({ name: g ? g.name : "(general)", seats: g && g.seats ? g.seats : "", url: url });
+
+        var card = document.createElement("div");
+        card.className = "qr-card";
+
+        var couple = document.createElement("p");
+        couple.className = "couple";
+        couple.textContent = (W.partner1 || "") + " & " + (W.partner2 || "");
+        var guest = document.createElement("p");
+        guest.className = "guest";
+        guest.textContent = g ? g.name : "You're invited";
+        var box = document.createElement("div");
+        box.className = "qr-box";
+        card.appendChild(couple);
+        card.appendChild(guest);
+        card.appendChild(box);
+
+        if (g && g.seats) {
+          var seats = document.createElement("p");
+          seats.className = "seats";
+          seats.textContent = g.seats + (g.seats === 1 ? " seat" : " seats") + " reserved";
+          card.appendChild(seats);
+        }
+        var scan = document.createElement("p");
+        scan.className = "scan";
+        scan.textContent = "Scan to RSVP";
+        card.appendChild(scan);
+
+        new QRCode(box, { text: url, width: 336, height: 336, correctLevel: QRCode.CorrectLevel.M });
+
+        var actions = document.createElement("div");
+        actions.className = "qr-actions no-print";
+        var dl = document.createElement("button");
+        dl.type = "button";
+        dl.textContent = "Download PNG";
+        dl.addEventListener("click", function () {
+          var canvas = box.querySelector("canvas");
+          var a = document.createElement("a");
+          a.href = canvas.toDataURL("image/png");
+          a.download = "rsvp-qr-" + slug(g && g.name) + ".png";
+          a.click();
+        });
+        var open = document.createElement("a");
+        open.href = url; open.target = "_blank"; open.rel = "noopener";
+        open.textContent = "Open link";
+        actions.appendChild(dl);
+        actions.appendChild(open);
+        card.appendChild(actions);
+
+        grid.appendChild(card);
+      });
+
+      $("count").textContent = list.length + (list.length === 1 ? " QR code" : " QR codes") + " generated";
+    }
+
+    function downloadCsv() {
+      if (!lastRows.length) generate();
+      if (!lastRows.length) return;
+      var esc = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
+      var csv = "Name,Seats,Link\n" + lastRows.map(function (r) {
+        return [esc(r.name), esc(r.seats), esc(r.url)].join(",");
+      }).join("\n");
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
+      a.download = "rsvp-links.csv";
+      a.click();
+    }
+
+    $("genBtn").addEventListener("click", generate);
+    $("printBtn").addEventListener("click", function () { if (!lastRows.length) generate(); window.print(); });
+    $("csvBtn").addEventListener("click", downloadCsv);
+
+    if ($("baseUrl").value) generate();
+  })();
+  </script>
+</body>
+</html>

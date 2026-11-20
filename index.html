@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wedding Invitation &amp; RSVP</title>
+  <meta name="description" content="You're invited — please RSVP.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <p class="eyebrow">The wedding of</p>
+      <h1 class="names">
+        <span id="p1">Partner One</span>
+        <span class="amp">&amp;</span>
+        <span id="p2">Partner Two</span>
+      </h1>
+      <p class="greeting" id="greeting"></p>
+    </section>
+
+    <hr class="divider">
+
+    <section class="details">
+      <p class="dear hidden" id="dear"></p>
+      <div>
+        <div class="detail-label">When</div>
+        <div class="detail-value" id="dateText"></div>
+        <div class="detail-sub" id="timeText"></div>
+      </div>
+      <div>
+        <div class="detail-label">Where</div>
+        <div class="detail-value" id="venue"></div>
+        <div class="detail-sub" id="address"></div>
+        <a class="link-btn" id="mapsLink" target="_blank" rel="noopener">Open in Maps →</a>
+      </div>
+    </section>
+
+    <div class="countdown" id="countdown" aria-label="Countdown to the wedding">
+      <div><b id="cd-d">0</b><span>Days</span></div>
+      <div><b id="cd-h">0</b><span>Hours</span></div>
+      <div><b id="cd-m">0</b><span>Mins</span></div>
+      <div><b id="cd-s">0</b><span>Secs</span></div>
+    </div>
+
+    <!-- RSVP form -->
+    <section class="card" id="rsvpCard">
+      <h2>RSVP</h2>
+      <p class="sub" id="deadlineText"></p>
+
+      <div class="notice hidden" id="demoNotice">
+        Demo mode: no Google Sheet is connected yet, so replies are only saved in this browser.
+        Set <code>scriptUrl</code> in <code>config.js</code> to collect real replies.
+      </div>
+
+      <form id="rsvpForm" novalidate>
+        <div class="field">
+          <label for="name">Your name</label>
+          <input type="text" id="name" name="name" autocomplete="name" maxlength="100" required>
+        </div>
+
+        <div class="field">
+          <span class="label">Will you attend?</span>
+          <div class="choice" role="radiogroup">
+            <div>
+              <input type="radio" id="att-yes" name="attending" value="Yes" required>
+              <label for="att-yes">Joyfully accept</label>
+            </div>
+            <div>
+              <input type="radio" id="att-no" name="attending" value="No">
+              <label for="att-no">Regretfully decline</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field hidden" id="guestsField">
+          <label for="guests">Number of guests <span class="optional">(including you)</span></label>
+          <select id="guests" name="guests"></select>
+        </div>
+
+        <div class="field">
+          <label for="phone">Phone <span class="optional">(optional)</span></label>
+          <input type="tel" id="phone" name="phone" autocomplete="tel" maxlength="30">
+        </div>
+
+        <div class="field">
+          <label for="message">Wishes for the couple <span class="optional">(optional)</span></label>
+          <textarea id="message" name="message" maxlength="500"></textarea>
+        </div>
+
+        <button class="btn" type="submit" id="submitBtn">Send RSVP</button>
+        <p class="error" id="formError" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- Thank-you state -->
+    <section class="card thanks hidden" id="thanksCard">
+      <p class="big" id="thanksTitle">Thank you!</p>
+      <p id="thanksText"></p>
+      <button class="btn ghost" type="button" id="editBtn">Change my reply</button>
+    </section>
+
+    <footer>
+      <span id="footerNames"></span>
+    </footer>
+  </main>
+
+  <script>
+  (function () {
+    var W = window.WEDDING || {};
+    var params = new URLSearchParams(location.search);
+    var inviteName = (params.get("to") || "").trim().slice(0, 100);
+    var seatsParam = parseInt(params.get("seats"), 10);
+    var maxSeats = seatsParam > 0 ? Math.min(seatsParam, 20) : (W.defaultMaxSeats || 4);
+    var storageKey = "rsvp:" + (inviteName || "general");
+
+    function $(id) { return document.getElementById(id); }
+    function setText(id, v) { $(id).textContent = v || ""; }
+
+    // ---------- Fill in details ----------
+    setText("p1", W.partner1);
+    setText("p2", W.partner2);
+    setText("greeting", W.greeting);
+    setText("dateText", W.dateText);
+    setText("timeText", W.timeText);
+    setText("venue", W.venue);
+    setText("address", W.address);
+    setText("footerNames", (W.partner1 || "") + " & " + (W.partner2 || ""));
+    document.title = W.partner1 + " & " + W.partner2 + " · RSVP";
+    if (W.mapsUrl) $("mapsLink").href = W.mapsUrl; else $("mapsLink").classList.add("hidden");
+
+    if (W.rsvpDeadline) {
+      var dl = new Date(W.rsvpDeadline + "T00:00:00");
+      setText("deadlineText", "Kindly reply by " + dl.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }));
+    }
+
+    if (inviteName) {
+      $("dear").textContent = "Dear " + inviteName + ",";
+      $("dear").classList.remove("hidden");
+      $("name").value = inviteName;
+    }
+
+    var demo = !W.scriptUrl;
+    if (demo) $("demoNotice").classList.remove("hidden");
+
+    // Guests dropdown
+    for (var i = 1; i <= maxSeats; i++) {
+      var o = document.createElement("option");
+      o.value = i; o.textContent = i + (i === 1 ? " person" : " people");
+      $("guests").appendChild(o);
+    }
+
+    // ---------- Countdown ----------
+    var target = new Date(W.dateISO).getTime();
+    function tick() {
+      var diff = Math.max(0, target - Date.now());
+      setText("cd-d", Math.floor(diff / 864e5));
+      setText("cd-h", Math.floor(diff / 36e5) % 24);
+      setText("cd-m", Math.floor(diff / 6e4) % 60);
+      setText("cd-s", Math.floor(diff / 1e3) % 60);
+    }
+    if (isNaN(target)) $("countdown").classList.add("hidden");
+    else { tick(); setInterval(tick, 1000); }
+
+    // ---------- Form behaviour ----------
+    var form = $("rsvpForm");
+    form.addEventListener("change", function (e) {
+      if (e.target.name === "attending") {
+        $("guestsField").classList.toggle("hidden", e.target.value !== "Yes");
+      }
+    });
+
+    function showThanks(data) {
+      $("rsvpCard").classList.add("hidden");
+      $("thanksCard").classList.remove("hidden");
+      if (data.attending === "Yes") {
+        setText("thanksTitle", "See you there!");
+        setText("thanksText", "Thank you, " + data.name + ". We've saved " + data.guests +
+          (data.guests == 1 ? " seat" : " seats") + " for you.");
+      } else {
+        setText("thanksTitle", "Thank you for letting us know");
+        setText("thanksText", "We'll miss you, " + data.name + ". Thank you for your kind reply.");
+      }
+    }
+
+    $("editBtn").addEventListener("click", function () {
+      $("thanksCard").classList.add("hidden");
+      $("rsvpCard").classList.remove("hidden");
+    });
+
+    // Restore a previous reply from this device
+    try {
+      var saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+      if (saved) {
+        $("name").value = saved.name || $("name").value;
+        $("phone").value = saved.phone || "";
+        $("message").value = saved.message || "";
+        var r = document.querySelector('input[name="attending"][value="' + saved.attending + '"]');
+        if (r) { r.checked = true; $("guestsField").classList.toggle("hidden", saved.attending !== "Yes"); }
+        if (saved.guests) $("guests").value = saved.guests;
+        showThanks(saved);
+      }
+    } catch (e) { /* storage unavailable */ }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      setText("formError", "");
+
+      var attending = (form.querySelector('input[name="attending"]:checked') || {}).value;
+      var data = {
+        name: $("name").value.trim(),
+        attending: attending || "",
+        guests: attending === "Yes" ? $("guests").value : "0",
+        phone: $("phone").value.trim(),
+        message: $("message").value.trim(),
+        invite: inviteName,
+        userAgent: navigator.userAgent.slice(0, 150)
+      };
+
+      if (!data.name) { setText("formError", "Please enter your name."); $("name").focus(); return; }
+      if (!data.attending) { setText("formError", "Please let us know if you can attend."); return; }
+
+      var btn = $("submitBtn");
+      btn.disabled = true; btn.textContent = "Sending…";
+
+      function done() {
+        try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch (e) {}
+        btn.disabled = false; btn.textContent = "Send RSVP";
+        showThanks(data);
+      }
+
+      if (demo) { setTimeout(done, 500); return; }
+
+      // Reading an Apps Script response cross-origin is unreliable (it redirects),
+      // so we send a "simple" no-cors POST. The reply is opaque but the row is saved.
+      fetch(W.scriptUrl, {
+        method: "POST",
+        mode: "no-cors",
+        body: new URLSearchParams(data)
+      }).then(done).catch(function () {
+        btn.disabled = false; btn.textContent = "Send RSVP";
+        setText("formError", "Couldn't send your reply. Please check your connection and try again.");
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
