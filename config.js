@@ -40,5 +40,5 @@ window.WEDDING = {
 
   // Paste your Google Apps Script Web App URL here (see README.md).
   // Leave empty to run in demo mode (replies are only saved in the browser).
-  scriptUrl: "https://script.google.com/macros/s/AKfycbxGNaPGivjx5o1QdETfH4C10MElxOBL_lMt1-4fMPXLCVQVujFdLTRqQRbNcGEqFw17qg/exec"
+  scriptUrl: "https://script.google.com/macros/s/AKfycbyJ0rSPQA-et-Qkp2u0a8_YWbiJ1dLYZLK-MXck02btwNx48vpwRHPRgy3t6A8555wrgw/exec"
 };
