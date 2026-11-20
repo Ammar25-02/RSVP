@@ -14,7 +14,7 @@
 <body>
   <main class="wrap">
     <section class="hero">
-      <p class="eyebrow">The wedding of</p>
+      <p class="eyebrow" id="eyebrow">The wedding of</p>
       <h1 class="names">
         <span id="p1">Partner One</span>
         <span class="amp">&amp;</span>
@@ -25,8 +25,20 @@
 
     <hr class="divider">
 
+    <p class="dear hidden" id="dear" style="text-align:center;margin-bottom:20px"></p>
+
+    <section class="formal hidden" id="formal">
+      <p class="hosts" id="hosts"></p>
+      <p class="invite-line" id="inviteLineMs"></p>
+      <p class="invite-line en" id="inviteLineEn"></p>
+      <p class="full-name" id="fullName1"></p>
+      <p class="full-amp">&amp;</p>
+      <p class="full-name" id="fullName2"></p>
+    </section>
+
+    <hr class="divider" id="formalDivider">
+
     <section class="details">
-      <p class="dear hidden" id="dear"></p>
       <div>
         <div class="detail-label">When</div>
         <div class="detail-value" id="dateText"></div>
@@ -36,7 +48,14 @@
         <div class="detail-label">Where</div>
         <div class="detail-value" id="venue"></div>
         <div class="detail-sub" id="address"></div>
-        <a class="link-btn" id="mapsLink" target="_blank" rel="noopener">Open in Maps →</a>
+        <div class="map-links">
+          <a class="link-btn" id="mapsLink" target="_blank" rel="noopener">Google Maps →</a>
+          <a class="link-btn" id="wazeLink" target="_blank" rel="noopener">Waze →</a>
+        </div>
+      </div>
+      <div id="dressBlock" class="hidden">
+        <div class="detail-label">Dress code</div>
+        <div class="detail-value" id="dressCode"></div>
       </div>
     </section>
 
@@ -106,6 +125,7 @@
 
     <footer>
       <span id="footerNames"></span>
+      <div class="hashtag" id="hashtag"></div>
     </footer>
   </main>
 
@@ -131,7 +151,21 @@
     setText("address", W.address);
     setText("footerNames", (W.partner1 || "") + " & " + (W.partner2 || ""));
     document.title = W.partner1 + " & " + W.partner2 + " · RSVP";
+    if (W.eyebrow) setText("eyebrow", W.eyebrow);
     if (W.mapsUrl) $("mapsLink").href = W.mapsUrl; else $("mapsLink").classList.add("hidden");
+    if (W.wazeUrl) $("wazeLink").href = W.wazeUrl; else $("wazeLink").classList.add("hidden");
+    if (W.dressCode) { setText("dressCode", W.dressCode); $("dressBlock").classList.remove("hidden"); }
+    setText("hashtag", W.hashtag);
+    if (W.fullName1 && W.fullName2) {
+      setText("hosts", W.hosts);
+      setText("inviteLineMs", W.inviteLineMs);
+      setText("inviteLineEn", W.inviteLineEn);
+      setText("fullName1", W.fullName1);
+      setText("fullName2", W.fullName2);
+      $("formal").classList.remove("hidden");
+    } else {
+      $("formalDivider").classList.add("hidden");
+    }
 
     if (W.rsvpDeadline) {
       var dl = new Date(W.rsvpDeadline + "T00:00:00");

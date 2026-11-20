@@ -78,6 +78,34 @@ body {
   margin: 0 0 8px;
 }
 
+/* ---------- Formal invitation block ---------- */
+.formal { text-align: center; }
+.formal p { margin: 0; }
+.hosts {
+  font-size: 13px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  line-height: 1.7;
+}
+.invite-line {
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 420px;
+  margin: 14px auto 0 !important;
+}
+.invite-line.en { font-style: italic; margin-top: 6px !important; margin-bottom: 16px !important; }
+.full-name {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.full-amp { font-family: var(--serif); font-style: italic; color: var(--accent); font-size: 20px; }
+
+.map-links { display: flex; justify-content: center; gap: 20px; }
+.hashtag { color: var(--accent-dark); margin-top: 6px; letter-spacing: .04em; }
+
 /* ---------- Details ---------- */
 .details {
   display: grid;
